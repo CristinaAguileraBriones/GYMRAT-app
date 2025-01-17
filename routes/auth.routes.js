@@ -4,7 +4,7 @@ const User = require("../models/User.model")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 
-const {verifyToken}= require("../middleware/auth.middleware")
+const {verifyToken}= require("../middlewares/auth.middlewares")
 
 //POST "/api/auth/signup" : crea al usuario con sus datos 
 router.post("/signup", async (req, res, next) => {
