@@ -4,14 +4,60 @@ const User = require("../models/User.model")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 
-const {verifyToken}= require("../middlewares/auth.middlewares")
+const {verifyToken, isAdmin}= require("../middlewares/auth.middlewares")
+
+//post "api/auth/admin/signup"
+// Ruta protegida para crear administradores
+router.post("/admin/signup", verifyToken, isAdmin, async (req, res, next) => {
+  console.log(req.body);
+  const { email, password, username, role } = req.body;
+
+  // Validaciones
+  if (!email || !username || !password) {
+      return res.status(400).json({ message: "Todos los campos son requeridos" });
+  }
+
+  // Validación de formato de email y contraseña
+  const passwordSecurity = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,16}$/gm;
+  if (!passwordSecurity.test(password)) {
+      return res.status(400).json({
+          message: "La contraseña debe tener al menos, una mayúscula, una minúscula, un número y entre 8 y 16 caracteres"
+      });
+  }
+
+  try {
+      // Verificar si el email ya está registrado
+      const foundUser = await User.findOne({ email: email });
+      if (foundUser) {
+          return res.status(400).json({ message: "Usuario ya registrado con ese email" });
+      }
+
+      // Encriptar la contraseña
+      const salt = await bcrypt.genSalt(12);
+      const hashPassword = await bcrypt.hash(password, salt);
+
+      // Crear el usuario con el rol proporcionado
+      const newUser = await User.create({
+          username,
+          password: hashPassword,
+          email,
+          role: role || "usuario" // Si no se especifica, por defecto será "usuario"
+      });
+
+      res.status(201).json({ message: "Administrador creado exitosamente", user: newUser });
+
+  } catch (error) {
+      next(error);
+  }
+});
+
 
 //POST "/api/auth/signup" : crea al usuario con sus datos 
 router.post("/signup", async (req, res, next) => {
   // Validaciones de backend
  
   console.log(req.body)
-  const { email, password, username } = req.body;
+  const { email, password, username, role } = req.body;
 
   // Campos obligatorios
   if (!email || !username || !password) {
@@ -49,13 +95,26 @@ router.post("/signup", async (req, res, next) => {
     //encriptar la contraseña
     const salt = await bcrypt.genSalt(12)
     const hashPassword = await bcrypt.hash(password, salt)
-
+    //validar el rol
     console.log(req.body)
+    const validRoles = ["admin", "proff", "userOnly"];
+    let assignedRole = role; 
+
+    if (!role || !validRoles.includes(role)) {
+      assignedRole = "usuario";
+    }
+    if (role === "admin") {
+      return res.status(403).json({ message: "No tienes permisos para crear una cuenta de administrador." });
+    }
+
+    console.log("Creando usuario con rol:", assignedRole);
+
     // Crear el usuario en la base de datos
     await User.create({
       username,
       password: hashPassword,
       email,
+      role: assignedRole
     })
 
     // Respuesta exitosa
@@ -109,7 +168,8 @@ router.post("/login", async (req, res, next) => {
     try {
         const payload = {
           _id: foundUser._id,
-          email: foundUser.email 
+          email: foundUser.email,
+          role: foundUser.role
         }
 
         console.log("Payload del token:", payload);
