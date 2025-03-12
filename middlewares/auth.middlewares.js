@@ -27,4 +27,11 @@ function isAdmin(req, res, next) {
   next();
 }
 
-module.exports = { verifyToken, isAdmin };
+const isProfessional = (req, res, next) => {
+  if (req.userRole !== "proff") {
+      return res.status(403).json({ message: "Acceso denegado. Solo los profesionales pueden acceder." });
+  }
+  next();
+};
+
+module.exports = { verifyToken, isAdmin, isProfessional };

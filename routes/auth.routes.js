@@ -107,15 +107,22 @@ router.post("/signup", async (req, res, next) => {
       return res.status(403).json({ message: "No tienes permisos para crear una cuenta de administrador." });
     }
 
-    console.log("Creando usuario con rol:", assignedRole);
+    console.log("Creando usuario con rol:", assignedRole)
+    //crear el qr
+    const qrData = JSON.stringify({ email, username })
+    const qrCode = await QRCode.toDataURL(qrData)
 
     // Crear el usuario en la base de datos
     await User.create({
       username,
       password: hashPassword,
       email,
-      role: assignedRole
+      role: assignedRole,
+      qrCode
     })
+
+   
+      
 
     // Respuesta exitosa
     res.status(201).json({ message: "Usuario creado exitosamente" })

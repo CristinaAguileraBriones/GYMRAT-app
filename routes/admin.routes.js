@@ -71,17 +71,19 @@ router.post("/profesionales", async (req, res) => {
 });
 
 // Baja de profesionales
-router.delete("/profesionales/:id", async (req, res) => {
+
+router.delete("/usuarios/:id", async (req, res) => {
     try {
-        const deletedProfessional = await Professional.findByIdAndDelete(req.params.id);
-        if (!deletedProfessional) {
-            return res.status(404).json({ message: "Profesional no encontrado" });
+        const deletedUser = await User.findByIdAndDelete(req.params.id);
+        if (!deletedUser) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
         }
-        res.status(200).json({ message: "Profesional eliminado correctamente" });
+        res.status(200).json({ message: "Usuario eliminado, QR deshabilitado" });
     } catch (error) {
-        res.status(500).json({ message: "Error al eliminar profesional", error });
+        res.status(500).json({ message: "Error al eliminar usuario", error });
     }
 });
+
 
 // Enviar correos electrónicos
 router.post("/enviar-correo", async (req, res) => {

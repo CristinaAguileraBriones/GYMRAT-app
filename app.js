@@ -21,6 +21,12 @@ app.use("/api", indexRoutes);
 //rutas de administrador
 const adminRoutes = require("./routes/admin.routes");
 app.use("/api/admin", adminRoutes);
+//rutas usuario
+const userRoutes = require("./routes/user.routes");
+app.use("/api/usuarios", userRoutes);
+//rutas profesionales
+const professionalRoutes = require("./routes/professional.routes");
+app.use("api/professional", professionalRoutes)
 
 
 // ❗ To handle errors. Routes that don't exist or errors that you handle in specific routes

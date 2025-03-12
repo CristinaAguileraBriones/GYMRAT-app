@@ -1,7 +1,9 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose")
+const { Schema, model } = require("mongoose")
 
-// TODO: Please make sure you edit the User model to whatever makes sense in this case
+
 const userSchema = new Schema(
+
   {
     role: {
       type: String,
@@ -23,7 +25,19 @@ const userSchema = new Schema(
       type: String,
       required: [true, 'Name is required'],
       trim: true
-    }
+    },
+    profilepicture: {
+      type: String
+
+    },
+    contactInfo: { type: String },
+
+    paymentStatus: { type: String, enum: ["pendiente", "pagado"], default: "pendiente" },
+
+    reservations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }], 
+
+    qrCode: { type: String }
+    
   },
     
   {
