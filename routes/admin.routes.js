@@ -49,22 +49,35 @@ router.delete("/usuarios/:id", async (req, res) => {
 });
 
 // Alta de profesionales
-router.post("/profesionales", async (req, res) => {
-    const { name, email, specialty } = req.body;
+router.post("/profesionales", verifyToken, isAdmin, async (req, res) => {
+    const { name, email, password, specialty, role } = req.body;
 
-    if (!name || !email || !specialty) {
+    if (!name || !email || !specialty || !password || !role) {
         return res.status(400).json({ message: "Todos los campos son requeridos" });
     }
 
     try {
+        // Verificar si el profesional ya está registrado
         const foundProfessional = await Professional.findOne({ email });
         if (foundProfessional) {
             return res.status(400).json({ message: "El profesional ya está registrado" });
         }
 
-        const newProfessional = await Professional.create({ name, email, specialty });
+        // encriptación
+        const salt = await bcrypt.genSalt(12);
+        const hashPassword = await bcrypt.hash(password, salt);
+
+        // Crear el profesional en la base de datos con la contraseña encriptada
+        const newProfessional = await Professional.create({ 
+            name, 
+            email, 
+            password: hashPassword, // Almacenamos la contraseña encriptada
+            specialty,
+            role
+        });
 
         res.status(201).json({ message: "Profesional registrado exitosamente", professional: newProfessional });
+
     } catch (error) {
         res.status(500).json({ message: "Error al registrar profesional", error });
     }

@@ -1,6 +1,7 @@
 const router = require("express").Router()
 const express = require("express")
 const User = require("../models/User.model")
+const Professional = require("../models/Professional.model")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 
@@ -50,6 +51,8 @@ router.post("/admin/signup", verifyToken, isAdmin, async (req, res, next) => {
       next(error);
   }
 });
+
+
 
 
 //POST "/api/auth/signup" : crea al usuario con sus datos 
@@ -121,8 +124,6 @@ router.post("/signup", async (req, res, next) => {
       qrCode
     })
 
-   
-      
 
     // Respuesta exitosa
     res.status(201).json({ message: "Usuario creado exitosamente" })
@@ -133,51 +134,50 @@ router.post("/signup", async (req, res, next) => {
 
 // POST "/api/auth/login" : verifica que ese usuario existe y lo deja entrar si el token es correcto 
 router.post("/login", async (req, res, next) => {
-    const { password, email } = req.body
-    console.log(email, password)
+  const { password, email } = req.body;
+  console.log(email, password);
 
-    // Validar que todos los campos tengan información
-    if (!password || !email) {
-        res.status(400).json({ message: "Todos los campos son requeridos" })
-        return
-    }
+  // Validar que los campos no estén vacíos
+  if (!password || !email) {
+      return res.status(400).json({ message: "Todos los campos son requeridos" });
+  }
 
-    let foundUser;  // Declarar foundUser fuera del try
+  let foundUser = null;  
+  let foundProfessional = null;
 
-    try {
-        // Buscar si el usuario existe en la base de datos
-        foundUser = await User.findOne({ email: email })
+  try {
+      // Buscar el usuario en ambas colecciones
+      foundUser = await User.findOne({ email: email });
+      foundProfessional = await Professional.findOne({ email: email });
 
-        // Agregar un log para verificar si se encuentra el usuario
-        console.log("Usuario encontrado:", foundUser);
+      // Si no se encuentra ni en User ni en Professional
+      if (!foundUser && !foundProfessional) {
+          return res.status(400).json({ message: "El usuario no existe, verifica el correo electrónico" });
+      }
 
-        if (!foundUser) {
-            // Si no se encuentra el usuario, detener el flujo y responder
-            res.status(400).json({ message: "El usuario no existe, verifica el correo electrónico que has introducido" });
-            return
-        }
+      // Determinar qué modelo se usará para la autenticación
+      const userToAuthenticate = foundUser || foundProfessional;
 
-        // Validar contraseña
-        const isPasswordCorrect = await bcrypt.compare(password, foundUser.password)
-        if (!isPasswordCorrect) {
-            res.status(400).json({ message: "Contraseña incorrecta" })
-            return
-        }
+      // Validar contraseña correctamente
+      const isPasswordCorrect = await bcrypt.compare(password, userToAuthenticate.password);
+      if (!isPasswordCorrect) {
+          return res.status(400).json({ message: "Contraseña incorrecta" });
+      }
 
-    } catch (error) {
-        console.error("Error en la búsqueda de usuario o validación:", error)
-        next(error)
-        return
-    }
+  } catch (error) {
+      console.error("Error en la búsqueda de usuario o validación:", error);
+      return next(error);
+  }
 
-    // Usuario autenticado -> entregar token
-    //todo, en el payload están los permisos de cada tipo de usuario que tengo que agregar
-    try {
-        const payload = {
-          _id: foundUser._id,
-          email: foundUser.email,
-          role: foundUser.role
-        }
+  // Usuario autenticado -> generar token correctamente
+  try {
+      const userToAuthenticate = foundUser || foundProfessional; // Definir el usuario correcto
+
+      const payload = {
+          _id: userToAuthenticate._id,
+          email: userToAuthenticate.email,
+          role: userToAuthenticate.role // Esto permitirá que el frontend sepa si es admin, profesional o usuario
+      };
 
         console.log("Payload del token:", payload);
 
